@@ -6,7 +6,7 @@
         <span class="article_info_date">发表于：{{ article.date }}</span>
         <span class="article_info_label">标签：
         <span v-if="article.labels.length === 0">未分类</span>
-        <el-tag v-else class="tag_margin" type="primary" v-for="tag in article.labels">{{ tag }}</el-tag>
+        <el-tag v-else class="tag_margin" type="primary" v-for="tag in article.labels" v-bind:key="tag">{{ tag }}</el-tag>
         </span>
       </div>
       <div class="article_detail_content" v-html="compiledMarkdown()"></div>
@@ -15,34 +15,35 @@
 </template>
 
 <script>
-  import marked from 'marked'
-  import highlight from 'highlight.js'
-  import '../assets/atom-one-light.css'
-  marked.setOptions({
-    highlight: function (code) {
-      return highlight.highlightAuto(code).value
+import marked from 'marked'
+import highlight from 'highlight.js'
+import '../assets/atom-one-light.css'
+marked.setOptions({
+  highlight: function (code) {
+    return highlight.highlightAuto(code).value
+  }
+})
+export default {
+  name: 'articleDetail',
+  data () {
+    return {
+      article: {}
     }
-  })
-  export default {
-    name: 'articleDetail',
-    data() {
-      return {
-        article: {}
-      }
-    },
-    mounted: function () {
-      let id = this.$route.params.id
-      this.$http.get('/api/articleDetail/' + id).then(
-        response => this.article = response.body,
-        response => console.log(response)
-      )
-    },
-    methods: {
-      compiledMarkdown: function () {
-        return marked(this.article.content || '', {sanitize: true})
-      }
+  },
+  mounted: function () {
+    const id = this.$route.params.id
+    this.$http.get('/api/articleDetail/' + id).then(
+      // eslint-disable-next-line no-return-assign
+      response => this.article = response.body,
+      response => console.log(response)
+    )
+  },
+  methods: {
+    compiledMarkdown: function () {
+      return marked(this.article.content || '', { sanitize: true })
     }
   }
+}
 </script>
 
 <style>

@@ -1,12 +1,12 @@
 <template>
   <div id="content">
-    <div class="article_wrap" v-for="item in articleList">
+    <div class="article_wrap" v-for="item in articleList" v-bind:key="item">
       <div class="article_title" @click="articleDetail( item._id )">{{ item.title }}</div>
       <div class="article_info">
         <span class="article_info_date">发表于：{{ item.date }}</span>
         <span class="article_info_label">标签：
         <span v-if="item.labels.length === 0">未分类</span>
-        <el-tag v-else class="tag_margin" type="primary" v-for="tag in item.labels">{{ tag }}</el-tag>
+        <el-tag v-else class="tag_margin" type="primary" v-for="tag in item.labels" v-bind:key="tag">{{ tag }}</el-tag>
         </span>
       </div>
       <div class="article_gist">{{ item.gist }}</div>
@@ -17,27 +17,28 @@
 </template>
 
 <script>
-  export default {
-    name: 'article',
-    data() {
-      return {
-        articleList: []
-      }
-    },
-    mounted: function () {
-      this.$http.get('/api/articleList').then(
-        response => this.articleList = response.body.reverse(),
-        response => console.log(response)
-      )
-    },
-    methods: {
-      articleDetail: function (id) {
-        // 这边不能多一个斜杠 '/articleDetail/'  因为router定义的路由是 '/articleDetail:id'
-        // 我把router改成 '/articleDetail/:id' 让前后端的路由规则一致
-        this.$router.push('/articleDetail/' + id)
-      }
+export default {
+  name: 'article',
+  data () {
+    return {
+      articleList: []
+    }
+  },
+  mounted: function () {
+    this.$http.get('/api/articleList').then(
+      // eslint-disable-next-line no-return-assign
+      response => this.articleList = response.body.reverse(),
+      response => console.log(response)
+    )
+  },
+  methods: {
+    articleDetail: function (id) {
+      // 这边不能多一个斜杠 '/articleDetail/'  因为router定义的路由是 '/articleDetail:id'
+      // 我把router改成 '/articleDetail/:id' 让前后端的路由规则一致
+      this.$router.push('/articleDetail/' + id)
     }
   }
+}
 </script>
 
 <style>

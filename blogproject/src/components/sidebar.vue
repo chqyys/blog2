@@ -73,20 +73,21 @@
 </template>
 
 <script>
-  export default {
-    name: 'sidebar',
-    data() {
-      return {
-        articleNumber: ''
-      }
-    },
-    mounted: function () {
-      this.$http.get('/api/articleList').then(
-        response => this.articleNumber = response.body.length,
-        response => console.log(response)
-      )
+export default {
+  name: 'sidebar',
+  data () {
+    return {
+      articleNumber: ''
     }
+  },
+  mounted: function () {
+    this.$http.get('/api/articleList').then(
+      // eslint-disable-next-line no-return-assign
+      response => this.articleNumber = response.body.length,
+      response => console.log(response)
+    )
   }
+}
 </script>
 
 <style>

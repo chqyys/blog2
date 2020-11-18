@@ -51,173 +51,175 @@
 </template>
 
 <script>
-  import _ from 'lodash'
-  import marked from 'marked'
-  import hightlight from 'highlight.js'
-  import '../../assets/atom-one-light.css'
-  marked.setOptions({
-    hightlight: function (code) {
-      return hightlight.hightlightAuto(code).value
+import _ from 'lodash'
+import marked from 'marked'
+import hightlight from 'highlight.js'
+import '../../assets/atom-one-light.css'
+marked.setOptions({
+  hightlight: function (code) {
+    return hightlight.hightlightAuto(code).value
+  }
+})
+export default {
+  name: 'articleEdit',
+  data () {
+    return {
+      title: '',
+      date: '',
+      content: '',
+      gist: '',
+      labels: [],
+      inputVisible: false,
+      inputValue: ''
     }
-  })
-  export default {
-    name: 'articleEdit',
-    data() {
-      return {
-        title: '',
-        date: '',
-        content: '',
-        gist: '',
-        labels: [],
-        inputVisible: false,
-        inputValue: '',
-      }
+  },
+  mounted: function () {
+    if (this.$route.params.id) {
+      this.$http.get('/api/articleDetail/' + this.$route.params.id).then(
+        response => {
+          const article = response.body
+          this.title = article.title
+          this.date = article.date
+          this.content = article.content
+          this.gist = article.gist
+          this.labels = article.labels
+        },
+        response => console.log(response)
+      )
+    }
+  },
+  methods: {
+    // 编译Markdown
+    compiledMarkdown: function () {
+      return marked(this.content, { sanitize: true })
     },
-    mounted: function () {
+    // 延时赋值给content
+    update: _.debounce(function (e) {
+      this.content = e.target.value
+    }, 300),
+    // 获取发表时间
+    getDate: function () {
+      let mydate, y, m, d, hh, mm, ss
+      // eslint-disable-next-line prefer-const
+      mydate = new Date()
+      // eslint-disable-next-line prefer-const
+      y = mydate.getFullYear()
+      m = mydate.getMonth()
+      d = mydate.getDate()
+      hh = mydate.getHours()
+      mm = mydate.getMinutes()
+      ss = mydate.getSeconds()
+      if (m < 10) m = '0' + m
+      if (d < 10) d = '0' + d
+      if (hh < 10) hh = '0' + hh
+      if (mm < 10) mm = '0' + mm
+      if (ss < 10) ss = '0' + ss
+      this.date = y + '-' + m + '-' + d + ' ' + hh + ':' + mm + ':' + ss
+    },
+    // 保存文章
+    saveArticle: function () {
+      const self = this
+      if (this.title.length === 0) {
+        this.$notify({
+          title: '提醒',
+          message: '请输入标题',
+          type: 'warning'
+        })
+        return
+      }
+      if (this.content.length === 0) {
+        this.$notify({
+          title: '提醒',
+          message: '请输入内容',
+          type: 'warning'
+        })
+        return
+      }
+      if (this.gist.length === 0) {
+        this.$notify({
+          title: '提醒',
+          message: '请输入简介',
+          type: 'warning'
+        })
+        return
+      }
       if (this.$route.params.id) {
-        this.$http.get('/api/articleDetail/' + this.$route.params.id).then(
+        // 更新文章
+        const obj = {
+          _id: this.$route.params.id,
+          title: this.title,
+          date: this.date,
+          content: this.content,
+          gist: this.gist,
+          labels: this.labels
+        }
+        this.$http.post('/api/admin/updateArticle', {
+          articleInformation: obj
+        }).then(
           response => {
-            let article = response.body
-            this.title = article.title
-            this.date = article.date
-            this.content = article.content
-            this.gist = article.gist
-            this.labels = article.labels
+            self.$message({
+              message: '更新文章成功',
+              type: 'success'
+            })
+            // 更新完成后跳转至该文章的详情页
+            self.$router.push('/articleDetail/' + self.$route.params.id)
+          },
+          response => console.log(response)
+        )
+      } else {
+        // 新建文章
+        // 获取时间
+        this.getDate()
+        const obj = {
+          title: this.title,
+          date: this.date,
+          content: this.content,
+          gist: this.gist,
+          labels: this.labels
+        }
+        this.$http.post('/api/admin/saveArticle', {
+          articleInformation: obj
+        }).then(
+          response => {
+            self.$message({
+              message: '发表文章成功',
+              type: 'success'
+            })
+            // 保存成功后跳转至文章列表页
+            self.refreshArticleList()
           },
           response => console.log(response)
         )
       }
     },
-    methods: {
-      // 编译Markdown
-      compiledMarkdown: function () {
-        return marked(this.content, {sanitize: true})
-      },
-      // 延时赋值给content
-      update: _.debounce(function (e) {
-        this.content = e.target.value
-      }, 300),
-      // 获取发表时间
-      getDate: function () {
-        let mydate, y, m, d, hh, mm, ss;
-        mydate = new Date()
-        y = mydate.getFullYear()
-        m = mydate.getMonth()
-        d = mydate.getDate()
-        hh = mydate.getHours()
-        mm = mydate.getMinutes()
-        ss = mydate.getSeconds()
-        if (m < 10) m = '0' + m
-        if (d < 10) d = '0' + d
-        if (hh < 10) hh = '0' + hh
-        if (mm < 10) mm = '0' + mm
-        if (ss < 10) ss = '0' + ss
-        this.date = y + '-' + m + '-' + d + ' ' + hh + ':' + mm + ':' + ss
-      },
-      // 保存文章
-      saveArticle: function () {
-        let self = this
-        if (this.title.length === 0) {
-          this.$notify({
-            title: '提醒',
-            message: '请输入标题',
-            type: 'warning'
-          })
-          return
-        }
-        if (this.content.length === 0) {
-          this.$notify({
-            title: '提醒',
-            message: '请输入内容',
-            type: 'warning'
-          })
-          return
-        }
-        if (this.gist.length === 0) {
-          this.$notify({
-            title: '提醒',
-            message: '请输入简介',
-            type: 'warning'
-          })
-          return
-        }
-        if (this.$route.params.id) {
-          // 更新文章
-          let obj = {
-            _id: this.$route.params.id,
-            title: this.title,
-            date: this.date,
-            content: this.content,
-            gist: this.gist,
-            labels: this.labels
-          }
-          this.$http.post('/api/admin/updateArticle', {
-            articleInformation: obj
-          }).then(
-            response => {
-              self.$message({
-                message: '更新文章成功',
-                type: 'success'
-              })
-              // 更新完成后跳转至该文章的详情页
-              self.$router.push('/articleDetail/' + self.$route.params.id)
-            },
-            response => console.log(response)
-          )
-        } else {
-          // 新建文章
-          // 获取时间
-          this.getDate()
-          let obj = {
-            title: this.title,
-            date: this.date,
-            content: this.content,
-            gist: this.gist,
-            labels: this.labels
-          }
-          this.$http.post('/api/admin/saveArticle', {
-            articleInformation: obj
-          }).then(
-            response => {
-              self.$message({
-                message: '发表文章成功',
-                type: 'success'
-              })
-              // 保存成功后跳转至文章列表页
-              self.refreshArticleList()
-            },
-            response => console.log(response)
-          )
-        }
-      },
-      // 保存成功后跳转至文章列表页
-      refreshArticleList: function () {
-        this.$router.push('/admin/articleList')
-      },
-      goBack: function () {
-        this.$router.go(-1)
-      },
-      // element标签组件
-      handleClose: function (tag) {
-        this.labels.splice(this.labels.indexOf(tag), 1)
-      },
-      showInput: function () {
-        this.inputVisible = true
-        this.$nextTick(_ => {
-          this.$refs.saveTagInput.$refs.input.focus()
-        })
-      },
-      handleInputConfirm: function () {
-        let inputValue = this.inputValue
-        if (inputValue) this.labels.push(inputValue)
-        this.inputVisible = false
-        this.inputValue = ''
-      }
+    // 保存成功后跳转至文章列表页
+    refreshArticleList: function () {
+      this.$router.push('/admin/articleList')
+    },
+    goBack: function () {
+      this.$router.go(-1)
+    },
+    // element标签组件
+    handleClose: function (tag) {
+      this.labels.splice(this.labels.indexOf(tag), 1)
+    },
+    showInput: function () {
+      this.inputVisible = true
+      this.$nextTick(_ => {
+        this.$refs.saveTagInput.$refs.input.focus()
+      })
+    },
+    handleInputConfirm: function () {
+      const inputValue = this.inputValue
+      if (inputValue) this.labels.push(inputValue)
+      this.inputVisible = false
+      this.inputValue = ''
     }
   }
+}
 </script>
 
-<style>
+<style  scoped lang="less">
   .edit_wrap {
     padding: 40px;
     font-size: 16px;
